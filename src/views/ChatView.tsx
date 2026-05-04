@@ -101,7 +101,7 @@ export default function ChatView() {
               <span className="text-[10px] text-white/25 font-mono tracking-wider">
                 {wakeDetected
                   ? `WAKE: "${wakeDetected}" — ACTIVATING...`
-                  : 'SAY "مرحبا" OR "HEY ASSISTANT"'}
+                  : 'SAY "HEY PURTIKUS" OR "سلام بورتيكوس"'}
               </span>
             </motion.div>
           )}

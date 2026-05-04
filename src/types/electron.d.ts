@@ -207,6 +207,7 @@ export interface ElectronAPI {
   minimize: () => void
   maximize: () => void
   close: () => void
+  showWindow: () => void
   isMaximized: () => Promise<boolean>
   onMaximizeChange: (callback: (isMaximized: boolean) => void) => void
   gemini: GeminiAPI

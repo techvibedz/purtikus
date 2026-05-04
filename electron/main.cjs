@@ -180,6 +180,13 @@ ipcMain.on('window-close', () => {
   mainWindow?.hide()
 })
 
+ipcMain.on('window-show', () => {
+  if (mainWindow) {
+    mainWindow.show()
+    mainWindow.focus()
+  }
+})
+
 ipcMain.handle('window-is-maximized', () => {
   return mainWindow?.isMaximized() ?? false
 })
