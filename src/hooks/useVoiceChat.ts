@@ -95,6 +95,8 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
     setTimeout(() => setLastToolCall(null), 3000)
   }, [addMessage])
 
+  const startingRef = useRef(false)
+
   const start = useCallback(async () => {
     if (!apiKey) {
       setError('API key not set. Go to Settings → API Keys.')
@@ -102,18 +104,23 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
       return
     }
 
+    if (startingRef.current) return
+    startingRef.current = true
+
     setError(null)
     setLastToolCall(null)
     setMessages([])
     setVoiceState('connecting')
     addMessage({ role: 'system', content: 'Validating API key...', type: 'status' })
 
+    try {
     // Quick API key check before opening WebSocket
     const keyTest = await GeminiLiveService.testApiKey(apiKey)
     if (!keyTest.ok) {
       setError(keyTest.error || 'Invalid API key')
       addMessage({ role: 'system', content: keyTest.error || 'Invalid API key', type: 'error' })
       setVoiceState('error')
+      startingRef.current = false
       return
     }
 
@@ -168,6 +175,16 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
     })
 
     await geminiRef.current.connect()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Connection failed'
+      if (!msg.includes('abort')) {
+        setError(msg)
+        addMessage({ role: 'system', content: msg, type: 'error' })
+        setVoiceState('error')
+      }
+    } finally {
+      startingRef.current = false
+    }
   }, [apiKey, handleToolCalls, addMessage])
 
   const startCapture = useCallback(async () => {

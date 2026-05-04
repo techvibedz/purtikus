@@ -109,10 +109,12 @@ export class GeminiLiveService {
       console.warn(`[GeminiLive] WS closed — code: ${info.code}, reason: "${info.reason}"`)
       this.connected = false
 
-      if (!this.intentionalClose && this.retryCount < MAX_RETRIES) {
+      if (this.intentionalClose) return
+
+      if (this.retryCount < MAX_RETRIES) {
         this.scheduleReconnect()
-      } else if (this.retryCount >= MAX_RETRIES) {
-        this.callbacks.onError(`Connection failed after ${MAX_RETRIES} retries (code ${info.code})`)
+      } else {
+        this.callbacks.onError(`Connection lost after ${MAX_RETRIES} retries`)
         this.callbacks.onStateChange('error')
       }
     })
@@ -182,10 +184,14 @@ export class GeminiLiveService {
 
   /** Quick connectivity test — tries a simple REST call to verify the API key */
   static async testApiKey(apiKey: string): Promise<{ ok: boolean; error?: string }> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 10000)
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+        { signal: controller.signal }
       )
+      clearTimeout(timer)
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         const msg = (body as { error?: { message?: string } }).error?.message || res.statusText
@@ -193,6 +199,10 @@ export class GeminiLiveService {
       }
       return { ok: true }
     } catch (err) {
+      clearTimeout(timer)
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return { ok: false, error: 'API key check timed out — check your internet connection' }
+      }
       return { ok: false, error: `Network error: ${err instanceof Error ? err.message : String(err)}` }
     }
   }
