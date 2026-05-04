@@ -9,15 +9,23 @@ const WS_BASE = 'wss://generativelanguage.googleapis.com/ws/google.ai.generative
 let ws = null
 let setupComplete = false
 let keepAliveTimer = null
+let pongReceived = true
 
 function startKeepAlive() {
   stopKeepAlive()
+  pongReceived = true
   keepAliveTimer = setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      // Use WebSocket protocol-level ping (doesn't interfere with Gemini API)
+      if (!pongReceived) {
+        // No pong since last ping — connection is dead
+        console.warn('[GeminiWS] No pong received — connection dead, forcing close')
+        try { ws.terminate() } catch { /* ignore */ }
+        return
+      }
+      pongReceived = false
       try { ws.ping() } catch { /* ignore */ }
     }
-  }, 15000) // every 15s
+  }, 10000) // every 10s
 }
 
 function stopKeepAlive() {
@@ -25,6 +33,7 @@ function stopKeepAlive() {
     clearInterval(keepAliveTimer)
     keepAliveTimer = null
   }
+  pongReceived = true
 }
 
 /**
@@ -79,7 +88,7 @@ function registerGeminiHandlers(ipcMain, getWindow) {
         }
       })
 
-      ws.on('pong', () => { /* connection alive */ })
+      ws.on('pong', () => { pongReceived = true })
 
       ws.on('message', (rawData) => {
         let data

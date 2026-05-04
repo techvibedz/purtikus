@@ -139,10 +139,22 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
     geminiRef.current = new GeminiLiveService(apiKey, {
       onStateChange: (state: ConnectionState) => {
         if (state === 'connected') {
+          // Stop old capture before restarting (handles reconnect case)
+          if (captureRef.current) {
+            captureRef.current.stop()
+            captureRef.current = null
+          }
+          if (levelIntervalRef.current) {
+            clearInterval(levelIntervalRef.current)
+            levelIntervalRef.current = null
+          }
           addMessage({ role: 'system', content: 'Connected — microphone active', type: 'status' })
           startCapture()
-        } else if (state === 'disconnected' && !isSpeakingRef.current) {
-          // noop
+        } else if (state === 'connecting') {
+          isSpeakingRef.current = false
+          playbackRef.current?.stop()
+          setVoiceState('connecting')
+          addMessage({ role: 'system', content: 'Reconnecting...', type: 'status' })
         } else if (state === 'error') {
           setVoiceState('error')
         }
