@@ -53,6 +53,13 @@ RULES:
 const MAX_RETRIES = 10
 const BASE_DELAY_MS = 500
 
+/** Errors that don't indicate a real problem — just transient browser/network noise */
+function isTransientError(msg: string): boolean {
+  const lower = msg.toLowerCase()
+  return lower.includes('abort') || lower.includes('the user aborted') ||
+    lower.includes('network error') || lower.includes('interrupted')
+}
+
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 export interface GeminiLiveCallbacks {
@@ -101,9 +108,12 @@ export class GeminiLiveService {
     })
 
     gemini.onError((msg: string) => {
+      // Suppress transient errors completely
+      if (this.intentionalClose || isTransientError(msg)) {
+        console.warn('[GeminiLive] Suppressed error:', msg)
+        return
+      }
       console.error('[GeminiLive] IPC error:', msg)
-      // Don't propagate transient WS errors during reconnect
-      if (this.intentionalClose) return
       this.callbacks.onError(msg)
     })
 
@@ -149,8 +159,14 @@ export class GeminiLiveService {
       console.log('[GeminiLive] Connected!')
       this.callbacks.onStateChange('connected')
     } else {
-      console.error('[GeminiLive] Connect failed:', result.error)
-      this.callbacks.onError(result.error || 'Connection failed')
+      const errMsg = result.error || 'Connection failed'
+      console.error('[GeminiLive] Connect failed:', errMsg)
+      // Transient errors → retry silently instead of showing error
+      if (isTransientError(errMsg) && this.retryCount < MAX_RETRIES) {
+        this.scheduleReconnect()
+        return
+      }
+      this.callbacks.onError(errMsg)
       this.callbacks.onStateChange('error')
     }
   }

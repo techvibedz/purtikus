@@ -13,13 +13,11 @@ let keepAliveTimer = null
 function startKeepAlive() {
   stopKeepAlive()
   keepAliveTimer = setInterval(() => {
-    if (ws && ws.readyState === WebSocket.OPEN && setupComplete) {
-      // Send an empty text message to keep the connection alive
-      try {
-        ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: '' }] }], turnComplete: false } }))
-      } catch { /* ignore */ }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      // Use WebSocket protocol-level ping (doesn't interfere with Gemini API)
+      try { ws.ping() } catch { /* ignore */ }
     }
-  }, 20000) // every 20s
+  }, 15000) // every 15s
 }
 
 function stopKeepAlive() {
