@@ -118,7 +118,7 @@ export default function AIOrb({ state, onToggle, micLevel = 0 }: AIOrbProps) {
 
       {/* State label below orb */}
       <motion.div
-        className="absolute -bottom-2 left-1/2 -translate-x-1/2"
+        className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-center whitespace-nowrap"
         key={state}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}

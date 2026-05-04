@@ -50,7 +50,7 @@ export default function ChatView() {
       </motion.div>
 
       {/* ── Orb + Waveform (visual centerpiece) ── */}
-      <div className="flex-shrink-0 flex flex-col items-center justify-center pt-6 pb-2">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-0">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -119,7 +119,7 @@ export default function ChatView() {
       </div>
 
       {/* ── Bottom Section: Log + Quick Actions ── */}
-      <div className="flex-1 min-h-0 flex flex-col gap-2 mt-1">
+      <div className="flex-shrink-0 flex flex-col gap-2 mt-1">
         {/* Conversation Log Header */}
         <div className="flex items-center justify-between px-1">
           <button
