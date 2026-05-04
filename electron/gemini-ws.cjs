@@ -9,23 +9,38 @@ const WS_BASE = 'wss://generativelanguage.googleapis.com/ws/google.ai.generative
 let ws = null
 let setupComplete = false
 let keepAliveTimer = null
-let pongReceived = true
+let lastActivityTs = Date.now()
+let missedPongs = 0
+const PING_INTERVAL_MS = 15000   // ping every 15s
+const MAX_MISSED_PONGS = 3       // allow 3 missed pongs (45s) before declaring dead
+const ACTIVITY_TIMEOUT_MS = 60000 // 60s with zero activity = dead
+
+function markActivity() {
+  lastActivityTs = Date.now()
+  missedPongs = 0
+}
 
 function startKeepAlive() {
   stopKeepAlive()
-  pongReceived = true
+  markActivity()
   keepAliveTimer = setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      if (!pongReceived) {
-        // No pong since last ping — connection is dead
-        console.warn('[GeminiWS] No pong received — connection dead, forcing close')
+      const silenceMs = Date.now() - lastActivityTs
+      // If we received ANY data recently (audio, messages, pong), connection is fine
+      if (silenceMs < PING_INTERVAL_MS) {
+        missedPongs = 0
+        try { ws.ping() } catch { /* ignore */ }
+        return
+      }
+      missedPongs++
+      if (missedPongs >= MAX_MISSED_PONGS || silenceMs >= ACTIVITY_TIMEOUT_MS) {
+        console.warn(`[GeminiWS] Connection dead — ${missedPongs} missed pongs, ${Math.round(silenceMs/1000)}s silent. Terminating.`)
         try { ws.terminate() } catch { /* ignore */ }
         return
       }
-      pongReceived = false
       try { ws.ping() } catch { /* ignore */ }
     }
-  }, 10000) // every 10s
+  }, PING_INTERVAL_MS)
 }
 
 function stopKeepAlive() {
@@ -33,7 +48,7 @@ function stopKeepAlive() {
     clearInterval(keepAliveTimer)
     keepAliveTimer = null
   }
-  pongReceived = true
+  missedPongs = 0
 }
 
 /**
@@ -88,9 +103,10 @@ function registerGeminiHandlers(ipcMain, getWindow) {
         }
       })
 
-      ws.on('pong', () => { pongReceived = true })
+      ws.on('pong', () => { markActivity() })
 
       ws.on('message', (rawData) => {
+        markActivity()
         let data
         try {
           data = JSON.parse(rawData.toString())
@@ -137,6 +153,7 @@ function registerGeminiHandlers(ipcMain, getWindow) {
   // ── Send audio ──
   ipcMain.on('gemini:audio', (_event, pcmBase64) => {
     if (!ws || ws.readyState !== WebSocket.OPEN || !setupComplete) return
+    markActivity() // sending audio = connection is active
     ws.send(JSON.stringify({
       realtimeInput: {
         audio: { mimeType: 'audio/pcm;rate=16000', data: pcmBase64 },

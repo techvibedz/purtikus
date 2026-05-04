@@ -60,8 +60,8 @@ RULES:
 - Do NOT chain multiple tool calls unless the user asked for multiple things.
 - If a tool fails, tell the user and suggest an alternative.`
 
-const MAX_RETRIES = 10
-const BASE_DELAY_MS = 500
+const MAX_RETRIES = 20
+const BASE_DELAY_MS = 1000
 
 /** Errors that don't indicate a real problem — just transient browser/network noise */
 function isTransientError(msg: string): boolean {
@@ -155,6 +155,12 @@ export class GeminiLiveService {
       this.connected = false
 
       if (this.intentionalClose) return
+
+      // Normal close (1000) = Gemini session timeout → reconnect immediately
+      if (info.code === 1000) {
+        console.log('[GeminiLive] Session ended normally, reconnecting...')
+        this.retryCount = 0 // reset counter — this isn't an error
+      }
 
       if (this.retryCount < MAX_RETRIES) {
         this.scheduleReconnect()
@@ -318,8 +324,8 @@ export class GeminiLiveService {
 
   private scheduleReconnect(): void {
     this.isReconnect = true
-    // Cap delay at 8s to avoid long waits
-    const delay = Math.min(8000, BASE_DELAY_MS * Math.pow(2, this.retryCount))
+    // Fast reconnect: 1s, 2s, 4s, 5s, 5s... (capped at 5s)
+    const delay = Math.min(5000, BASE_DELAY_MS * Math.pow(2, Math.min(this.retryCount, 3)))
     this.retryCount++
     console.warn(`[GeminiLive] Reconnecting in ${delay / 1000}s (attempt ${this.retryCount}/${MAX_RETRIES})...`)
     this.callbacks.onStateChange('connecting')
