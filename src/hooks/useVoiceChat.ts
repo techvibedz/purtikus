@@ -208,6 +208,10 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
       }, 80)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Microphone access denied'
+      if (msg.toLowerCase().includes('abort')) {
+        console.warn('[VoiceChat] Suppressed audio capture error:', msg)
+        return
+      }
       setError(msg)
       setVoiceState('error')
       geminiRef.current?.disconnect()

@@ -1,6 +1,6 @@
 {
   "name": "purtikus",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Purtikus AI Desktop Assistant",
   "type": "module",
   "main": "electron/main.cjs",
