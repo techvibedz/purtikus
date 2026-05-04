@@ -209,6 +209,7 @@ export interface ElectronAPI {
   close: () => void
   showWindow: () => void
   isMaximized: () => Promise<boolean>
+  onHotkeyToggle: (callback: () => void) => void
   onMaximizeChange: (callback: (isMaximized: boolean) => void) => void
   gemini: GeminiAPI
   pc: PcControlAPI

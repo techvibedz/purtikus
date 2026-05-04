@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, session, desktopCapturer } = require('electron')
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, session, desktopCapturer, globalShortcut } = require('electron')
 const path = require('path')
 const { registerPcControlHandlers } = require('./pc-control.cjs')
 const { registerGeminiHandlers } = require('./gemini-ws.cjs')
@@ -31,6 +31,20 @@ app.commandLine.appendSwitch('no-proxy-server')
 let mainWindow = null
 let tray = null
 let isQuitting = false
+
+// ── Single instance lock — second launch triggers hotkey toggle ──
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      mainWindow.show()
+      mainWindow.focus()
+      mainWindow.webContents.send('hotkey:toggle')
+    }
+  })
+}
 
 // ── Auto-start on Windows login ──
 if (app.isPackaged) {
@@ -253,14 +267,36 @@ function setupAutoUpdater() {
   setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000)
 }
 
+function registerHotkeys() {
+  // Copilot key sends F23 on many Windows laptops
+  const hotkeyBindings = ['F23', 'CommandOrControl+Shift+P']
+  for (const key of hotkeyBindings) {
+    try {
+      const ok = globalShortcut.register(key, () => {
+        if (mainWindow) {
+          mainWindow.show()
+          mainWindow.focus()
+          mainWindow.webContents.send('hotkey:toggle')
+        }
+      })
+      if (ok) console.log(`[Hotkey] Registered: ${key}`)
+      else console.warn(`[Hotkey] Failed to register: ${key}`)
+    } catch (err) {
+      console.warn(`[Hotkey] Could not register ${key}:`, err.message)
+    }
+  }
+}
+
 app.whenReady().then(() => {
   createTray()
   createWindow()
   setupAutoUpdater()
+  registerHotkeys()
 })
 
 app.on('before-quit', () => {
   isQuitting = true
+  globalShortcut.unregisterAll()
 })
 
 app.on('window-all-closed', () => {

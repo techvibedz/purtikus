@@ -30,6 +30,13 @@ export default function ChatView() {
   const wakeWordEnabled = (voiceState === 'idle' || voiceState === 'error') && !!apiKey
   const { isListening: wakeListening, detected: wakeDetected, isSupported: wakeSupported } = useWakeWord(handleWake, wakeWordEnabled)
 
+  // Global hotkey toggle (Copilot key / Ctrl+Shift+P)
+  useEffect(() => {
+    window.electron?.onHotkeyToggle(() => {
+      toggle()
+    })
+  }, [toggle])
+
   // Refresh analyser reference when state changes
   useEffect(() => {
     if (voiceState === 'listening' || voiceState === 'speaking') {

@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('electron', {
   close: () => ipcRenderer.send('window-close'),
   showWindow: () => ipcRenderer.send('window-show'),
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+  onHotkeyToggle: (callback) => {
+    ipcRenderer.on('hotkey:toggle', () => callback())
+  },
   onMaximizeChange: (callback) => {
     ipcRenderer.on('maximize-change', (_, isMaximized) => callback(isMaximized))
   },
