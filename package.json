@@ -1,6 +1,6 @@
 {
   "name": "purtikus",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Purtikus AI Desktop Assistant",
   "type": "module",
   "main": "electron/main.cjs",
@@ -21,7 +21,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.0",
-    "screenshot-desktop": "^1.15.4"
+    "screenshot-desktop": "^1.15.4",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",
@@ -35,8 +36,7 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
     "vite": "^5.1.0",
-    "wait-on": "^7.2.0",
-    "ws": "^8.20.0"
+    "wait-on": "^7.2.0"
   },
   "build": {
     "appId": "com.purtikus.app",
@@ -61,9 +61,15 @@
       "owner": "techvibedz",
       "repo": "purtikus"
     },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/ws/**",
+      "node_modules/screenshot-desktop/**"
+    ],
     "win": {
       "target": "nsis",
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "requestedExecutionLevel": "requireAdministrator"
     },
     "nsis": {
       "oneClick": false,

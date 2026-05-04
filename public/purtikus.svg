@@ -1,10 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#b14aed;stop-opacity:1" />
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1028"/>
+      <stop offset="100%" stop-color="#080810"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="core" cx="45%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#581cc3"/>
+    </radialGradient>
+    <radialGradient id="eye" cx="40%" cy="35%" r="50%">
+      <stop offset="0%" stop-color="#22f5ff"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </radialGradient>
+    <linearGradient id="ring1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
     </linearGradient>
+    <linearGradient id="ring2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#06d6e6"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <filter id="glowF">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
-  <rect width="100" height="100" rx="20" fill="#0a0a0f"/>
-  <text x="50" y="65" font-family="Arial Black, sans-serif" font-size="50" font-weight="900" fill="url(#g)" text-anchor="middle">P</text>
+  <!-- Background -->
+  <rect width="256" height="256" rx="48" fill="url(#bg)"/>
+  <!-- Outer glow -->
+  <circle cx="128" cy="128" r="110" fill="url(#glow)"/>
+  <!-- Outer ring -->
+  <circle cx="128" cy="128" r="88" fill="none" stroke="url(#ring1)" stroke-width="5" opacity="0.85" filter="url(#glowF)"/>
+  <!-- Middle ring -->
+  <circle cx="128" cy="128" r="72" fill="none" stroke="url(#ring2)" stroke-width="2.5" opacity="0.6"/>
+  <!-- Inner ring -->
+  <circle cx="128" cy="128" r="56" fill="none" stroke="#a855f7" stroke-width="1.5" opacity="0.5"/>
+  <!-- Core orb -->
+  <circle cx="128" cy="128" r="44" fill="url(#core)" filter="url(#glowF)"/>
+  <!-- Cyan eye -->
+  <circle cx="128" cy="128" r="22" fill="url(#eye)" filter="url(#glowF)"/>
+  <!-- Highlight -->
+  <ellipse cx="120" cy="120" rx="8" ry="6" fill="white" opacity="0.7"/>
+  <ellipse cx="136" cy="132" rx="4" ry="3" fill="white" opacity="0.3"/>
+  <!-- P letter -->
+  <text x="128" y="140" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="700" fill="white" fill-opacity="0.5" text-anchor="middle">P</text>
 </svg>
