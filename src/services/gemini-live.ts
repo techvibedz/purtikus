@@ -102,6 +102,8 @@ export class GeminiLiveService {
 
     gemini.onError((msg: string) => {
       console.error('[GeminiLive] IPC error:', msg)
+      // Don't propagate transient WS errors during reconnect
+      if (this.intentionalClose) return
       this.callbacks.onError(msg)
     })
 

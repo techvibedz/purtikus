@@ -169,6 +169,12 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
         handleToolCalls(calls)
       },
       onError: (message: string) => {
+        // Filter out transient errors that don't actually break the connection
+        const lower = message.toLowerCase()
+        if (lower.includes('abort') || lower.includes('the user aborted')) {
+          console.warn('[VoiceChat] Suppressed transient error:', message)
+          return
+        }
         setError(message)
         addMessage({ role: 'system', content: message, type: 'error' })
       },

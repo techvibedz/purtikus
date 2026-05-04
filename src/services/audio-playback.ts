@@ -67,7 +67,7 @@ export class AudioPlaybackService {
       this.nextPlayTime = 0
     }
     if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume()
+      this.audioCtx.resume().catch(() => { /* ignore AbortError */ })
     }
   }
 
