@@ -71,6 +71,7 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
     for (const call of calls) {
       const argsStr = Object.entries(call.args).map(([k, v]) => `${k}: ${v}`).join(', ')
       addMessage({ role: 'ai', content: `${call.name}(${argsStr})`, type: 'tool' })
+      geminiRef.current?.recordContext(`[TOOL CALL] ${call.name}(${argsStr})`)
     }
 
     try {
@@ -83,6 +84,7 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
         const ok = (resp.response as { ok?: boolean }).ok !== false
         const detail = ok ? 'Success' : ((resp.response as { error?: string }).error ?? 'Failed')
         addMessage({ role: 'ai', content: detail, type: 'tool_result', success: ok })
+        geminiRef.current?.recordContext(`[TOOL RESULT] ${ok ? 'Success' : 'Failed'}: ${JSON.stringify(resp.response).slice(0, 200)}`)
       }
     } catch (err) {
       console.error('[ToolCalls] Error:', err)
@@ -162,6 +164,7 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
       onAudioData: (pcmBase64: string) => {
         if (!isSpeakingRef.current) {
           addMessage({ role: 'ai', content: 'Responding...', type: 'voice' })
+          geminiRef.current?.recordContext('[AI] Started speaking (audio response)')
         }
         isSpeakingRef.current = true
         setVoiceState('speaking')
@@ -170,6 +173,7 @@ export function useVoiceChat(apiKey: string): UseVoiceChatReturn {
       onTurnComplete: () => {
         isSpeakingRef.current = false
         setVoiceState('listening')
+        geminiRef.current?.recordContext('[AI] Finished speaking, listening for user')
       },
       onInterrupted: () => {
         isSpeakingRef.current = false

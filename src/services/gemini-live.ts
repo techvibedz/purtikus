@@ -76,6 +76,8 @@ export interface GeminiLiveCallbacks {
  * actual WebSocket runs via the Node.js `ws` package.
  * The public API is identical to the old direct-WS version.
  */
+const MAX_CONTEXT_ENTRIES = 60
+
 export class GeminiLiveService {
   private apiKey: string
   private callbacks: GeminiLiveCallbacks
@@ -83,10 +85,31 @@ export class GeminiLiveService {
   private retryCount = 0
   private retryTimer: ReturnType<typeof setTimeout> | null = null
   private intentionalClose = false
+  private contextEntries: string[] = []
+  private isReconnect = false
 
   constructor(apiKey: string, callbacks: GeminiLiveCallbacks) {
     this.apiKey = apiKey
     this.callbacks = callbacks
+  }
+
+  /** Record a conversation event for reconnect memory */
+  recordContext(entry: string): void {
+    this.contextEntries.push(entry)
+    if (this.contextEntries.length > MAX_CONTEXT_ENTRIES) {
+      this.contextEntries = this.contextEntries.slice(-MAX_CONTEXT_ENTRIES)
+    }
+  }
+
+  private buildSystemPrompt(): string {
+    if (!this.isReconnect || this.contextEntries.length === 0) return SYSTEM_PROMPT
+    const history = this.contextEntries.join('\n')
+    return `${SYSTEM_PROMPT}\n\n` +
+      `IMPORTANT — RECONNECTION CONTEXT:\n` +
+      `The previous connection was lost and this is a reconnection. ` +
+      `Below is a log of what happened in our conversation so far. ` +
+      `Continue naturally from where we left off. Do NOT repeat greetings or introductions.\n\n` +
+      `--- CONVERSATION HISTORY ---\n${history}\n--- END HISTORY ---`
   }
 
   async connect(): Promise<void> {
@@ -131,7 +154,8 @@ export class GeminiLiveService {
       }
     })
 
-    // Build the setup message
+    // Build the setup message (with conversation history on reconnect)
+    const systemPrompt = this.buildSystemPrompt()
     const setupMsg = {
       setup: {
         model: MODEL,
@@ -144,10 +168,13 @@ export class GeminiLiveService {
           },
         },
         systemInstruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
+          parts: [{ text: systemPrompt }],
         },
         tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
       },
+    }
+    if (this.isReconnect) {
+      console.log(`[GeminiLive] Reconnecting with ${this.contextEntries.length} context entries`)
     }
 
     console.log('[GeminiLive] Connecting via IPC...')
@@ -280,6 +307,7 @@ export class GeminiLiveService {
   }
 
   private scheduleReconnect(): void {
+    this.isReconnect = true
     // Cap delay at 8s to avoid long waits
     const delay = Math.min(8000, BASE_DELAY_MS * Math.pow(2, this.retryCount))
     this.retryCount++
